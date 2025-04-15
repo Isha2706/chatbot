@@ -1,0 +1,30 @@
+[
+  {
+    "user": "hi",
+    "bot": "Could you please share your name?"
+  },
+  {
+    "user": "hi",
+    "bot": "Can you please tell me your name?"
+  },
+  {
+    "user": "isha",
+    "bot": "How old are you, Isha?"
+  },
+  {
+    "user": "20",
+    "bot": "Could you please share your gender?"
+  },
+  {
+    "user": "no",
+    "bot": "Could you please provide your email address so we can get in touch with you?"
+  },
+  {
+    "user": "ishan@gmil.com",
+    "bot": "Can you please share your phone number?"
+  },
+  {
+    "user": "i can't share with you",
+    "bot": "Could you please share your current city of residence?"
+  }
+]
