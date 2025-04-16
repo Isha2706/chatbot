@@ -35,6 +35,7 @@ function ChatWindow() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: input }),
     });
+    
     const data = await res.json();
 
     // Add bot reply to chat

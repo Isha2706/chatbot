@@ -9,7 +9,11 @@ const path = require("path");
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 app.use(bodyParser.json());
 app.use(express.json());
 
@@ -25,6 +29,7 @@ if (!fs.existsSync(profileFile)) fs.writeFileSync(profileFile, "{}");
 // ✅ POST /chat
 app.post("/chat", async (req, res) => {
   const { message } = req.body;
+  // console.log("Received message:", message);  
 
   try {
     const chatHistory = JSON.parse(fs.readFileSync(historyFile));
@@ -64,7 +69,7 @@ Your task:
 `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [{ role: "system", content: systemPrompt }],
     });
 
