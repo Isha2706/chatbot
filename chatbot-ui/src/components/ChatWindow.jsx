@@ -44,8 +44,8 @@ function ChatWindow() {
   };
 
   return (
-    <div className="p-4 w-[400px] min-h-full  mx-auto bg-gray-200">
-      <div className="chat-box bg-gray-100 p-1 rounded shadow h-[470px] text-md overflow-y-auto mb-5">
+    <div className="p-4 min-h-full w-[400px]  mx-auto ">
+      <div className="chat-box bg-slate-100 p-1 rounded shadow h-[470px] text-md overflow-y-auto mb-5">
         {messages.map((msg, index) => (
           <div key={index} className={msg.sender === 'user' ? 'text-right' : 'text-left'}>
                    <p className={`p-4 rounded inline-block m-1 ${msg.sender === 'user' ? 'bg-green-200' : 'bg-indigo-200'}`}>{msg.text}</p>
@@ -53,7 +53,7 @@ function ChatWindow() {
         ))}
           <div ref={messagesEndRef} />
       </div>
-      <div className="flex">
+      <div className="flex gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -68,7 +68,7 @@ function ChatWindow() {
         />
         <button
           onClick={sendMessage}
-          className="bg-green-200  p-2 rounded-r hover:bg-green-600"
+          className="bg-blue-200 p-2 rounded-r-lg hover:bg-blue-300"
         >
           Send
         </button>
