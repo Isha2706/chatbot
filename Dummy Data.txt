@@ -71,9 +71,7 @@
     {
       "title": "Glam Up: E-Commerce Website",
       "description": [
-        "Developed a full-stack e-commerce platform, Glam Up, using React.js, Node.js, MongoDB, Tailwind CSS, and Redux, featuring a user-friendly interface for showcasing makeup products across various categories.",
-        "Integrated MongoDB for dynamic product management, a payment gateway for seamless transactions, and Tailwind CSS with Redux for responsive styling and state management."
-      ]
+        ]
     }
   ],
   "college": "Sangam University",

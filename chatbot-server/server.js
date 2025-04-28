@@ -15,7 +15,7 @@ app.use(express.json());
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ✅ Paths
+// Paths
 const dbDir = path.join(__dirname, "db");
 const portfolioDir = path.join(__dirname, "portfolio");
 const historyFile = path.join(dbDir, "chat-history.json");
@@ -28,7 +28,7 @@ if (!fs.existsSync(profileFile)) fs.writeFileSync(profileFile, "{}");
 if (!fs.existsSync(dummyFile)) fs.writeFileSync(dummyFile, "{}");
 if (!fs.existsSync(portfolioDir)) fs.mkdirSync(portfolioDir);
 
-// ✅ POST /chat - Chat and update profile
+// POST /chat - Quick Response, Updates User Profile Only
 app.post("/chat", async (req, res) => {
   const { message } = req.body;
 
@@ -45,19 +45,62 @@ app.post("/chat", async (req, res) => {
       )
       .join("\n");
 
+    const promptQuick = `
+You are a friendly assistant helping build a user profile.
+
+Here is the existing chat history:
+${formattedConversation}
+
+Here is the current user profile:
+${JSON.stringify(userProfile, null, 2)}
+
+Your task:
+- Generate the next relevant question for the user to build their profile further.
+- Add encouragement message first then the next asked question for better user interaction.
+- If user have any website perference then add that data in 'websitePerference' in user profile.
+- Update the user profile if needed.
+- Respond ONLY in this JSON format:
+{ "nextQuestion": "string", "updatedUserProfile": { ... } }
+`;
+
+    const quickResponse = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "system", content: promptQuick }],
+    });
+
+    const parsedQuick = JSON.parse(quickResponse.choices[0].message.content);
+    updatedHistory[updatedHistory.length - 1].bot = parsedQuick.nextQuestion;
+
+    fs.writeFileSync(historyFile, JSON.stringify(updatedHistory, null, 2));
+    fs.writeFileSync(
+      profileFile,
+      JSON.stringify(parsedQuick.updatedUserProfile, null, 2)
+    );
+
+    res.json({
+      reply: parsedQuick.nextQuestion,
+      chatHistory: updatedHistory,
+    });
+  } catch (error) {
+    console.error("Chat Error:", error.message);
+    res.status(500).json({ error: "Failed to get reply from OpenAI" });
+  }
+});
+
+// POST /promptBackground - Generate Portfolio from Profile
+app.post("/promptBackground", async (req, res) => {
+  try {
+    const userProfile = JSON.parse(fs.readFileSync(profileFile));
     const portfolioCode = {
       html: fs.readFileSync("./portfolio/index.html", "utf-8"),
       css: fs.readFileSync("./portfolio/style.css", "utf-8"),
       js: fs.readFileSync("./portfolio/script.js", "utf-8"),
     };
 
-    const systemPrompt = `
-You are a friendly assistant helping build a user profile and generate a personalized portfolio.
+    const systemPromptBackground = `
+You are a developer assistant that generates a personalized portfolio website.
 
-Here is the existing chat history:
-${formattedConversation}
-
-Here is the current user profile (in JSON):
+Here is the user profile (JSON):
 ${JSON.stringify(userProfile, null, 2)}
 
 Here is the current portfolio code:
@@ -71,15 +114,11 @@ JS:
 ${portfolioCode.js}
 
 Your task:
-- Generate a helpful and relevant next question for the user to build their profile further.
-- Update the chat history by adding your reply to the latest user message.
-- Ask questions with good interaction with user.
-- Update the user profile if you infer any new details.
-- Update the portfolio code (HTML, CSS, JS) to reflect the user's profile better.
-- Respond ONLY in this strict JSON format:
-
+- Update and improve the HTML, CSS, and JS based on user profile.
+- Keep code neat, responsive, and personalized.
+- Add things that user ask for in website.
+- Respond only in this JSON format:
 {
-  "nextQuestion": "string",
   "updatedUserProfile": { ... },
   "updatedCode": {
     "html": "string",
@@ -90,35 +129,28 @@ Your task:
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "system", content: systemPrompt }],
+      messages: [{ role: "system", content: systemPromptBackground }],
     });
 
     const content = response.choices[0].message.content;
     const parsed = JSON.parse(content);
 
-    updatedHistory[updatedHistory.length - 1].bot = parsed.nextQuestion;
-
-    fs.writeFileSync(historyFile, JSON.stringify(updatedHistory, null, 2));
-    fs.writeFileSync(profileFile, JSON.stringify(parsed.updatedUserProfile, null, 2));
-
-    // Save updated portfolio code
+    fs.writeFileSync(
+      profileFile,
+      JSON.stringify(parsed.updatedUserProfile, null, 2)
+    );
     fs.writeFileSync("./portfolio/index.html", parsed.updatedCode.html);
     fs.writeFileSync("./portfolio/style.css", parsed.updatedCode.css);
     fs.writeFileSync("./portfolio/script.js", parsed.updatedCode.js);
 
-    res.json({
-      reply: parsed.nextQuestion,
-      chatHistory: updatedHistory,
-      userProfile: parsed.updatedUserProfile,
-    });
-  } catch (error) {
-    console.error("Chat Error:", error.message);
-    res.status(500).json({ error: "Failed to get reply from OpenAI" });
+    res.status(200).json({ message: "Portfolio updated successfully" });
+  } catch (err) {
+    console.error("Background update error:", err);
+    res.status(500).json({ error: "Failed to update portfolio" });
   }
 });
 
-
-// ✅ GET endpoints
+// GET endpoints
 app.get("/history", (req, res) => {
   const chatHistory = JSON.parse(fs.readFileSync(historyFile));
   res.json(chatHistory);
@@ -132,13 +164,51 @@ app.get("/profile", (req, res) => {
 app.get("/reset", (req, res) => {
   try {
     fs.writeFileSync(historyFile, "[]");
-    fs.writeFileSync(profileFile, JSON.stringify({
-      name: "", age: "", gender: "", email: "", phone: "", address: "", linkedin: "", github: "", portfolio: "",
-      experience: "", skills: [], languages: [], tools: [], certifications: [], projects: [],
-      college: "", degree: "", fieldOfStudy: "", schooling: "", company: "", role: "", post: "", description: "",
-      interests: [], hobbies: [], goals: "", personality: "", availability: "", preferredLocation: "", expectedSalary: "",
-      noticePeriod: "", achievements: [], volunteering: [], hackathons: [], extracurriculars: []
-    }, null, 2));
+    fs.writeFileSync(
+      profileFile,
+      JSON.stringify(
+        {
+          name: "",
+          age: "",
+          gender: "",
+          email: "",
+          phone: "",
+          address: "",
+          linkedin: "",
+          github: "",
+          portfolio: "",
+          experience: "",
+          skills: [],
+          languages: [],
+          tools: [],
+          certifications: [],
+          projects: [],
+          college: "",
+          degree: "",
+          fieldOfStudy: "",
+          schooling: "",
+          company: "",
+          role: "",
+          post: "",
+          description: "",
+          interests: [],
+          hobbies: [],
+          goals: "",
+          personality: "",
+          availability: "",
+          preferredLocation: "",
+          expectedSalary: "",
+          noticePeriod: "",
+          achievements: [],
+          volunteering: [],
+          hackathons: [],
+          extracurriculars: [],
+          websitePerference: [],
+        },
+        null,
+        2
+      )
+    );
 
     res.status(200).json({ message: "Files reset successfully" });
   } catch (error) {
@@ -147,55 +217,10 @@ app.get("/reset", (req, res) => {
   }
 });
 
-// ✅ POST /generate-portfolio - Generate portfolio from profile & dummy
-// app.post("/generate-portfolio", async (req, res) => {
-//   try {
-//     const userProfile = JSON.parse(fs.readFileSync(profileFile));
-//     const dummyProfile = JSON.parse(fs.readFileSync(dummyFile));
-
-//     const generationPrompt = `
-// You are a portfolio generator. Based on the following user profile and dummy data, generate a personal portfolio.
-
-// User Profile (override dummy where available):
-// ${JSON.stringify({ ...dummyProfile, ...userProfile }, null, 2)}
-
-// Instructions:
-// - Create 3 separate files: index.html, style.css, and script.js
-// - Use HTML5 for structure, CSS for styling, and JS for basic interactivity
-// - Keep the layout professional and clean
-// - Return a JSON like:
-// {
-//   "index.html": "HTML CONTENT",
-//   "style.css": "CSS CONTENT",
-//   "script.js": "JS CONTENT"
-// }
-// - if in userProfile having any data empty then use the dummyProfile data for Portfolio 
-// - First check keys of userProfile and if any key value id empty then take that keys value form dummyProfile. 
-// `;
-
-//     const response = await openai.chat.completions.create({
-//       model: "gpt-4o-mini",
-//       messages: [{ role: "system", content: generationPrompt }],
-//     });
-
-//     const codeOutput = JSON.parse(response.choices[0].message.content);
-
-//     // Save portfolio files
-//     fs.writeFileSync(path.join(portfolioDir, "index.html"), codeOutput["index.html"]);
-//     fs.writeFileSync(path.join(portfolioDir, "style.css"), codeOutput["style.css"]);
-//     fs.writeFileSync(path.join(portfolioDir, "script.js"), codeOutput["script.js"]);
-
-//     res.status(200).json({ message: "Portfolio generated successfully", files: codeOutput });
-//   } catch (error) {
-//     console.error("Portfolio Generation Error:", error.message);
-//     res.status(500).json({ error: "Failed to generate portfolio" });
-//   }
-// });
-
-// ✅ Serve portfolio files
+// Serve portfolio files
 app.use("/portfolio", express.static(portfolioDir));
 
-// ✅ GET - Portfolio Code File (index.html, style.css, script.js)
+// GET - Portfolio Code File (index.html, style.css, script.js)
 app.get("/get-portfolio-code", async (req, res) => {
   const folderPath = portfolioDir;
 
@@ -219,6 +244,7 @@ app.get("/get-portfolio-code", async (req, res) => {
   }
 });
 
-
 const port = process.env.PORT || 3001;
-app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
+app.listen(port, () =>
+  console.log(`Server running on http://localhost:${port}`)
+);

@@ -23,7 +23,7 @@ const ChatHistoryPanel = () => {
   return (
     <div className="text-sm">
       <h2 className="text-xl font-semibold mb-4">Chat History (JSON)</h2>
-      <pre className="bg-indigo-200 p-3 rounded overflow-x-auto h-[530px] w-[900px]">
+      <pre className="bg-indigo-200 p-3 rounded overflow-x-auto h-[530px] ">
         {JSON.stringify(history, null, 2)}
       </pre>
     </div>

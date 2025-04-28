@@ -89,7 +89,7 @@ function PortfolioCode() {
   return (
     <>
       <h2 className="text-xl font-semibold mb-4">Code Panel</h2>
-      <div className="flex  rounded overflow-x-auto h-[530px] w-[900px] bg-white overflow-hidden shadow-lg">
+      <div className="flex  rounded overflow-x-auto h-[530px] bg-white overflow-hidden shadow-lg">
         <FileSidebar
           files={Object.keys(codeFiles)}
           selectedFile={selectedFile}
