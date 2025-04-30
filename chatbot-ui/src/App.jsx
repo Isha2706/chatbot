@@ -27,7 +27,7 @@ function App() {
 
   return (
     <div className="flex h-screen">
-      <div className={`flex-grow ${showHistory || showProfile || showPreview || showCode ? 'w-1/3 mt-2': 'mt-6 ml-60 mr-60 p-4'}`}>
+      <div className={`flex-grow  ${showHistory || showProfile || showPreview || showCode ? 'w-1/3 mt-2': ' mx-60  p-4'}`}>
         <ChatWindow />
       </div>
 

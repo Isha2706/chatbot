@@ -30,7 +30,6 @@ body {
     margin: 0 auto;
     padding: 0 20px;
 }
-
 a {
     text-decoration: none;
     color: var(--dark-color);
@@ -261,6 +260,54 @@ header .container {
     margin-bottom: 15px;
 }
 
+/* Hobbies Section */
+.hobbies {
+    padding: 100px 0;
+}
+.hobbies-content {
+    display: flex;
+    justify-content: center;
+}
+.hobbies-content ul {
+    list-style: none;
+}
+.hobbies-content ul li {
+    font-size: 1.2rem;
+    margin: 5px 0;
+}
+
+/* Projects Section */
+.projects {
+    padding: 100px 0;
+}
+.projects-content {
+    display: flex;
+    justify-content: center;
+}
+.projects-content ul {
+    list-style: none;
+}
+.projects-content ul li {
+    font-size: 1.2rem;
+    margin: 5px 0;
+}
+
+/* Certifications Section */
+.certifications {
+    padding: 100px 0;
+}
+.certifications-content {
+    display: flex;
+    justify-content: center;
+}
+.certifications-content ul {
+    list-style: none;
+}
+.certifications-content ul li {
+    font-size: 1.2rem;
+    margin: 5px 0;
+}
+
 /* Contact Section */
 .contact {
     padding: 100px 0;
@@ -326,19 +373,8 @@ footer {
 }
 .footer-content {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-}
-.footer-links {
-    display: flex;
-    gap: 20px;
-}
-.footer-links a {
-    color: #fff;
-    transition: var(--transition);
-}
-.footer-links a:hover {
-    color: var(--primary-color);
 }
 
 /* Responsive Design */

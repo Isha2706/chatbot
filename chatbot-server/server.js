@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const dotenv = require("dotenv");
 const OpenAI = require("openai");
+const multer = require("multer");
 
 dotenv.config();
 
@@ -22,11 +23,31 @@ const historyFile = path.join(dbDir, "chat-history.json");
 const profileFile = path.join(dbDir, "user-profile.json");
 const dummyFile = path.join(dbDir, "dummy-data.json");
 
+// Set up storage for uploaded images
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    // Save with original name and timestamp to avoid collisions
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
+});
+const upload = multer({ storage: storage });
+
 // Ensure required files and directories exist
 if (!fs.existsSync(historyFile)) fs.writeFileSync(historyFile, "[]");
 if (!fs.existsSync(profileFile)) fs.writeFileSync(profileFile, "{}");
 if (!fs.existsSync(dummyFile)) fs.writeFileSync(dummyFile, "{}");
 if (!fs.existsSync(portfolioDir)) fs.mkdirSync(portfolioDir);
+
+// Serve uploaded images statically
+app.use("/uploads", express.static(uploadsDir));
 
 // POST /chat - Quick Response, Updates User Profile Only
 app.post("/chat", async (req, res) => {
@@ -242,6 +263,25 @@ app.get("/get-portfolio-code", async (req, res) => {
     console.error("Error reading portfolio code:", err);
     res.status(500).json({ error: "Failed to load portfolio code" });
   }
+});
+
+// Image upload endpoint
+app.post("/upload-image", upload.single("image"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  // Update user-profile.json with image info
+  const userProfile = JSON.parse(fs.readFileSync(profileFile));
+  userProfile.uploadedImage = {
+    filename: req.file.filename,
+    originalname: req.file.originalname,
+    url: `/uploads/${req.file.filename}`,
+    uploadedAt: new Date().toISOString()
+  };
+  fs.writeFileSync(profileFile, JSON.stringify(userProfile, null, 2));
+
+  res.json({ success: true, image: userProfile.uploadedImage });
 });
 
 const port = process.env.PORT || 3001;
