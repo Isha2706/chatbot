@@ -55,13 +55,13 @@ function PortfolioCode() {
   const [selectedFile, setSelectedFile] = useState("index.html");
 
   useEffect(() => {
-    fetch(`${BASE_URL}/get-portfolio-code`)
+    fetch(`${BASE_URL}/get-webSite-code`)
       .then((res) => res.json())
       .then((data) => {
         setCodeFiles(data);
         setSelectedFile(Object.keys(data)[0]);
       })
-      .catch((err) => console.error("Error fetching portfolio code:", err));
+      .catch((err) => console.error("Error fetching webSite code:", err));
   }, []);
 
   const handleDownloadFile = (filename) => {
@@ -81,7 +81,7 @@ function PortfolioCode() {
     zip.generateAsync({ type: "blob" }).then((blob) => {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "portfolio-code.zip";
+      link.download = "webSite-code.zip";
       link.click();
     });
   };

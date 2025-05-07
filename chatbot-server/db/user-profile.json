@@ -1,38 +1,131 @@
 {
-  "name": "",
-  "age": "",
-  "gender": "",
-  "email": "",
-  "phone": "",
-  "address": "",
-  "linkedin": "",
-  "github": "",
-  "portfolio": "",
-  "experience": "",
-  "skills": [],
-  "languages": [],
-  "tools": [],
-  "certifications": [],
-  "projects": [],
-  "college": "",
-  "degree": "",
-  "fieldOfStudy": "",
-  "schooling": "",
-  "company": "",
-  "role": "",
-  "post": "",
-  "description": "",
-  "interests": [],
-  "hobbies": [],
-  "goals": "",
-  "personality": "",
-  "availability": "",
-  "preferredLocation": "",
-  "expectedSalary": "",
-  "noticePeriod": "",
-  "achievements": [],
-  "volunteering": [],
-  "hackathons": [],
-  "extracurriculars": [],
-  "websitePerference": []
+  "websiteType": "educational platform",
+  "targetAudience": "beginners and intermediate learners, students, career switchers, and early professionals",
+  "mainGoal": "to offer free and affordable learning resources including interactive tutorials, beginner-friendly courses, coding challenges, and a supportive community for Q&A and peer learning.",
+  "colorScheme": "blue and white with accents of teal or light green",
+  "theme": "clean and modern",
+  "pages": [
+    "Homepage",
+    "Courses Page",
+    "Course Detail Pages",
+    "About Us",
+    "Forum/Community",
+    "Contact Us",
+    "Dashboard"
+  ],
+  "features": [
+    "User accounts and login/signup",
+    "Progress tracking",
+    "Feedback and rating system",
+    "Social media integration",
+    "Bookmarking/favorites",
+    "Certificate generation"
+  ],
+  "fonts": {
+    "headings": "Montserrat, Poppins",
+    "body": "Open Sans, Roboto"
+  },
+  "branding": {
+    "logo": "modern, minimalistic logo that reflects learning, growth, and technology",
+    "tagline": [
+      "Code. Learn. Grow.",
+      "Empowering Learners, One Line at a Time.",
+      "Your Path to Mastery Starts Here."
+    ],
+    "colorPalette": "vibrant yet professional with blue, green, and white"
+  },
+  "additionalCourses": [
+    {
+      "courseTitle": "Web Development Basics",
+      "structure": [
+        {
+          "module": 1,
+          "title": "Introduction to Web Development",
+          "topics": [
+            "What is Web Development?",
+            "Overview of Frontend, Backend, and Full Stack Development",
+            "Tools and Technologies for Web Development (HTML, CSS, JavaScript, and frameworks)"
+          ]
+        },
+        {
+          "module": 2,
+          "title": "HTML Basics",
+          "topics": [
+            "Understanding HTML Structure",
+            "Creating Web Pages with HTML",
+            "Essential HTML Tags (Headings, Paragraphs, Links, Images)",
+            "Forms and Input Fields"
+          ]
+        },
+        {
+          "module": 3,
+          "title": "CSS Basics",
+          "topics": [
+            "Styling Web Pages with CSS",
+            "CSS Selectors, Properties, and Values",
+            "Layout Techniques (Flexbox, Grid)",
+            "Responsive Design: Making Your Website Mobile-Friendly"
+          ]
+        },
+        {
+          "module": 4,
+          "title": "JavaScript Basics",
+          "topics": [
+            "Introduction to JavaScript",
+            "Variables, Functions, and Loops",
+            "DOM Manipulation: Changing HTML and CSS with JavaScript",
+            "Event Handling (Button clicks, form submissions)"
+          ]
+        },
+        {
+          "module": 5,
+          "title": "Building a Simple Website",
+          "topics": [
+            "Step-by-Step Guide to Building a Static Website",
+            "Combining HTML, CSS, and JavaScript",
+            "Creating a Contact Form and Validation"
+          ]
+        },
+        {
+          "module": 6,
+          "title": "Introduction to Web Development Tools",
+          "topics": [
+            "Working with Code Editors (VS Code)",
+            "Version Control with Git and GitHub",
+            "Introduction to Browser Developer Tools"
+          ]
+        },
+        {
+          "module": 7,
+          "title": "Introduction to Web Hosting",
+          "topics": [
+            "What is Web Hosting?",
+            "How to Host Your Website on Platforms like GitHub Pages or Netlify"
+          ]
+        },
+        {
+          "module": 8,
+          "title": "Final Project",
+          "topics": [
+            "Build a Personal Portfolio Website",
+            "Apply HTML, CSS, and JavaScript Knowledge"
+          ]
+        },
+        {
+          "module": 9,
+          "title": "Conclusion and Next Steps",
+          "topics": [
+            "Overview of Next Steps for Learning Web Development",
+            "Resources for Advancing to Backend or Full Stack Development"
+          ]
+        }
+      ],
+      "additionalFeatures": [
+        "Quizzes after each module to assess understanding.",
+        "Practical Projects that learners can showcase in their portfolio.",
+        "Discussion Forums for community interaction and doubt resolution.",
+        "Certificate of Completion upon finishing the course."
+      ]
+    }
+  ]
 }

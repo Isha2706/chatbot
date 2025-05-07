@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeUpNow - Educational Platform</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="#home" data-page="home">Home</a></li>
+                <li><a href="#courses" data-page="courses">Courses</a></li>
+                <li><a href="#about" data-page="about">About Us</a></li>
+                <li><a href="#community" data-page="community">Forum/Community</a></li>
+                <li><a href="#contact" data-page="contact">Contact Us</a></li>
+                <li><a href="#dashboard" data-page="dashboard">Dashboard</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section id="home">
+            <h1>Welcome to CodeUpNow</h1>
+            <p>Your Path to Mastery Starts Here.</p>
+            <button class="cta">Get Started</button>
+        </section>
+        <section id="courses" class="hidden">
+            <h2>Available Courses</h2>
+            <div class="course-card">
+                <h3>Introduction to Programming</h3>
+                <p>Learn the fundamentals of programming using Python.</p>
+                <button class="cta">Start Course</button>
+            </div>
+            <div class="course-card">
+                <h3>Web Development Basics</h3>
+                <p>Build interactive websites with HTML, CSS, and JavaScript.</p>
+                <button class="cta">Start Course</button>
+            </div>
+            <div class="course-card">
+                <h3>Data Science Essentials</h3>
+                <p>Understand the basics of data analysis with Python.</p>
+                <button class="cta">Start Course</button>
+            </div>
+        </section>
+        <section id="about" class="hidden">
+            <h2>About Us</h2>
+            <p>At CodeUpNow, we empower learners through accessible education.</p>
+            <p><span id="goal">Our aim is to provide free and affordable learning resources for all.</span></p>
+        </section>
+        <section id="community" class="hidden">
+            <h2>Forum/Community</h2>
+            <p>Join our community, ask questions, and share knowledge!</p>
+        </section>
+        <section id="contact" class="hidden">
+            <h2>Contact Us</h2>
+            <form id="contact-form">
+                <input type="text" placeholder="Your Name" required>
+                <input type="email" placeholder="Your Email" required>
+                <textarea placeholder="Your Message" required></textarea>
+                <button type="submit">Submit</button>
+            </form>
+        </section>
+        <section id="dashboard" class="hidden">
+            <h2>Your Dashboard</h2>
+            <p>Track your progress and achievements here.</p>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2023 CodeUpNow. All rights reserved.</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
