@@ -14,6 +14,7 @@ app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
 app.use(express.json());
 
+require("dotenv").config();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Paths
@@ -40,41 +41,24 @@ app.use("/webSite", express.static(websiteDir));
 
 // File upload config (image upload)
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + "-" + uniqueSuffix + ext);
-  },
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
 const upload = multer({ storage: storage });
 
-// ✅ GET: Serve chat history
+// GET: Serve chat history
 app.get("/history", (req, res) => {
   const chatHistory = JSON.parse(fs.readFileSync(historyFile));
   res.json(chatHistory);
 });
 
-// ✅ GET: Serve user profile
+// GET: Serve user profile
 app.get("/profile", (req, res) => {
   const userProfile = JSON.parse(fs.readFileSync(profileFile));
   res.json(userProfile);
 });
 
-// ✅ GET: Dynamic API for webSite to fetch user profile
-// app.get("/api/profile-data", (req, res) => {
-//   try {
-//     const profile = JSON.parse(fs.readFileSync(profileFile, "utf-8"));
-//     res.json(profile);
-//   } catch (error) {
-//     console.error("Error reading profile data:", error);
-//     res.status(500).json({ error: "Failed to load profile data" });
-//   }
-// });
-
-// ✅ GET: Serve current webSite code
+// GET: Serve current webSite code
 app.get("/get-webSite-code", async (req, res) => {
   const files = ["index.html", "style.css", "script.js"];
   const code = {};
@@ -96,25 +80,97 @@ app.get("/get-webSite-code", async (req, res) => {
   }
 });
 
-// ✅ POST: Upload image and save in profile
-app.post("/upload-image", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
+// POST: Upload multiple images with a text and analyze using OpenAI
+app.post("/upload-image", upload.array("images", 10), async (req, res) => {
+  try {
+    const files = req.files;
+    const userText = req.body.text || "";
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
+
+    // Load existing profile and history
+    const userProfile = JSON.parse(fs.readFileSync(profileFile));
+    const chatHistory = JSON.parse(fs.readFileSync(historyFile));
+
+    // Ensure images field exists
+    if (!userProfile.images) userProfile.images = [];
+
+    const newImagesData = [];
+
+    for (const file of files) {
+      const imagePath = path.join(uploadsDir, file.filename);
+
+      // Call OpenAI to analyze the image
+      const analysis = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful assistant that describes images.",
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "What kind of image is this and what is its use?",
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/${path
+                    .extname(file.filename)
+                    .slice(1)};base64,${fs.readFileSync(imagePath, {
+                    encoding: "base64",
+                  })}`,
+                },
+              },
+            ],
+          },
+        ],
+        max_tokens: 200,
+      });
+
+      const aiDescription = analysis.choices[0].message.content;
+
+      const imageData = {
+        filename: file.filename,
+        originalname: file.originalname,
+        url: `/uploads/${file.filename}`,
+        uploadedAt: new Date().toISOString(),
+        description: userText,
+        aiAnalysis: aiDescription,
+      };
+
+      userProfile.images.push(imageData);
+      newImagesData.push(imageData);
+    }
+
+    // Add to chat history
+    chatHistory.push({
+      user: `Uploaded ${files.length} image(s) with text: "${userText}"`,
+      bot: newImagesData
+        .map((img) => `AI Analysis for ${img.originalname}: ${img.aiAnalysis}`)
+        .join("\n\n"),
+    });
+
+    // Save profile and history
+    fs.writeFileSync(profileFile, JSON.stringify(userProfile, null, 2));
+    fs.writeFileSync(historyFile, JSON.stringify(chatHistory, null, 2));
+
+    res.status(200).json({
+      success: true,
+      images: newImagesData,
+      message: "Images uploaded and analyzed successfully.",
+    });
+  } catch (err) {
+    console.error("Upload Error:", err);
+    res.status(500).json({ error: "Image upload or analysis failed." });
   }
-
-  const userProfile = JSON.parse(fs.readFileSync(profileFile));
-  userProfile.uploadedImage = {
-    filename: req.file.filename,
-    originalname: req.file.originalname,
-    url: `/uploads/${req.file.filename}`,
-    uploadedAt: new Date().toISOString(),
-  };
-
-  fs.writeFileSync(profileFile, JSON.stringify(userProfile, null, 2));
-  res.json({ success: true, image: userProfile.uploadedImage });
 });
 
-// ✅ POST: Reset user profile and history
+// POST: Reset user profile and history
 app.get("/reset", (req, res) => {
   try {
     const defaultProfile = {
@@ -135,10 +191,9 @@ app.get("/reset", (req, res) => {
       customScripts: "",
       branding: {},
       updateRequests: [],
-      additionalNotes: ""
-  };
+      additionalNotes: "",
+    };
 
-    
     fs.writeFileSync(historyFile, `[]`);
     fs.writeFileSync(profileFile, JSON.stringify(defaultProfile, null, 2));
     res.status(200).json({ message: "Files reset successfully" });
@@ -148,7 +203,7 @@ app.get("/reset", (req, res) => {
   }
 });
 
-// ✅ POST: Quick profile-building chat
+// POST: Quick profile-building chat
 app.post("/chat", async (req, res) => {
   const { message } = req.body;
 
@@ -166,39 +221,50 @@ app.post("/chat", async (req, res) => {
       .join("\n");
 
     const promptQuick = `
-      You are a helpful assistant that talks to users to understand and build their ideal website.
-      
-      Here is the existing chat history:
-      ${formattedConversation}
-      
-      Here is the current user profile:
-      ${JSON.stringify(userProfile, null, 2)}
-      
-      Your goals:
-      - Ask relevant questions to understand the user's needs for their website.
-      - Update the profile accordingly.
-      - If the user asks to change something (e.g. color, layout), update "updateRequests".
-      - Be friendly and interactive, and make sure to guide the user step by step.
-      - If user is asking some thinking or ask for change something then answer his and then ask question related to it.
-      - Keep everything in JSON format for structured updates.
-      
-      Respond ONLY in this JSON format:
-      { "nextQuestion": "string", "updatedUserProfile": { ... } }
-      `;
+You are a helpful assistant that talks to users to understand and build their ideal website.
+
+Here is the existing chat history:
+${formattedConversation}
+
+Here is the current user profile:
+${JSON.stringify(userProfile, null, 2)}
+
+Your goals:
+- Ask relevant questions to understand the user's needs for their website.
+- Update the profile accordingly.
+- If the user asks to change something (e.g. color, layout), update "updateRequests".
+- Be friendly and interactive, and make sure to guide the user step by step.
+- If user is asking something or requests changes, respond helpfully and then ask the next relevant question.
+- Respond ONLY in this JSON format:
+{ "nextQuestion": "string", "updatedUserProfile": { ... } }
+IMPORTANT: Do NOT include any markdown or backticks. Just return the JSON.
+    `.trim();
 
     const quickResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "system", content: promptQuick }],
     });
 
-    const parsedQuick = JSON.parse(quickResponse.choices[0].message.content);
+    let responseText = quickResponse.choices[0].message.content;
+
+    // Clean up markdown formatting if present
+    responseText = responseText.replace(/```json|```/g, "").trim();
+
+    let parsedQuick;
+    try {
+      parsedQuick = JSON.parse(responseText);
+    } catch (err) {
+      console.error("❌ Failed to parse JSON from OpenAI:", responseText);
+      return res.status(500).json({
+        error: "Invalid JSON received from OpenAI",
+        rawResponse: responseText,
+      });
+    }
+
     updatedHistory[updatedHistory.length - 1].bot = parsedQuick.nextQuestion;
 
     fs.writeFileSync(historyFile, JSON.stringify(updatedHistory, null, 2));
-    fs.writeFileSync(
-      profileFile,
-      JSON.stringify(parsedQuick.updatedUserProfile, null, 2)
-    );
+    fs.writeFileSync(profileFile, JSON.stringify(parsedQuick.updatedUserProfile, null, 2));
 
     res.json({
       reply: parsedQuick.nextQuestion,
@@ -210,7 +276,8 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-// ✅ POST: Generate dynamic webSite from profile
+
+// POST: Generate dynamic webSite from profile
 app.post("/promptBackground", async (req, res) => {
   try {
     const userProfile = JSON.parse(fs.readFileSync(profileFile));
@@ -242,7 +309,7 @@ Your task:
 - Update the HTML, CSS, and JS files to reflect the user's website preferences.
 - Include all required pages and sections if listed.
 - Insert placeholders like <span id="goal"> or <div id="about-section">.
-- In script.js, fetch "/profile", "/history" and dynamically populate the HTML.
+- In script.js, fetch "/profile", "/history" and multiple pages website populate the HTML.
 - Make the site responsive and visually appealing.
 - Generate the dummy data in website according user need.
 - Use clean and modern design, respecting colorScheme, theme, etc.

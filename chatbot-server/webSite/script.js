@@ -1,22 +1,33 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const navLinks = document.querySelectorAll('nav a');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(event) {
-            event.preventDefault();
-            const targetId = this.getAttribute('data-page');
-            document.querySelectorAll('main section').forEach(section => {
-                section.classList.add('hidden');
-            });
-            // Update Dashboard with Dynamic Data
-            if (targetId === 'dashboard') {
-                document.getElementById('goal').innerText = 'Active learning progress';
-            }
-            document.getElementById(targetId).classList.remove('hidden');
-        });
+function showPage(pageId) {
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(page => {
+        page.classList.remove('active');
     });
-    document.getElementById('contact-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        alert('Your message has been sent!');
-        this.reset();
-    });
-})
+    document.getElementById(pageId).classList.add('active');
+}
+
+// Form Submission Handling
+const bookingForm = document.getElementById('bookingForm');
+bookingForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    alert('Booking Successful!');
+});
+
+const contactForm = document.getElementById('contactForm');
+contactForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    alert('Message Sent! We will get back to you shortly.');
+});
+
+// Image Slider Functionality
+let currentIndex = 0;
+const images = document.querySelectorAll('.hero-image');
+function showNextImage() {
+    images[currentIndex].style.opacity = '0';
+    currentIndex = (currentIndex + 1) % images.length;
+    images[currentIndex].style.opacity = '1';
+}
+setInterval(showNextImage, 5000);
+
+// Initial setup to show the first image
+images[0].style.opacity = '1';

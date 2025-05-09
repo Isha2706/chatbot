@@ -3,72 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeUpNow - Educational Platform</title>
+    <title>InnerCalm - Meditation and Mindfulness</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="#home" data-page="home">Home</a></li>
-                <li><a href="#courses" data-page="courses">Courses</a></li>
-                <li><a href="#about" data-page="about">About Us</a></li>
-                <li><a href="#community" data-page="community">Forum/Community</a></li>
-                <li><a href="#contact" data-page="contact">Contact Us</a></li>
-                <li><a href="#dashboard" data-page="dashboard">Dashboard</a></li>
-            </ul>
-        </nav>
-    </header>
-    <main>
-        <section id="home">
-            <h1>Welcome to CodeUpNow</h1>
-            <p>Your Path to Mastery Starts Here.</p>
-            <button class="cta">Get Started</button>
-        </section>
-        <section id="courses" class="hidden">
-            <h2>Available Courses</h2>
-            <div class="course-card">
-                <h3>Introduction to Programming</h3>
-                <p>Learn the fundamentals of programming using Python.</p>
-                <button class="cta">Start Course</button>
+    <!-- Navigation Bar -->
+    <nav>
+        <div class="logo">InnerCalm</div>
+        <ul class="nav-links">
+            <li onclick="showPage('home')">Home</li>
+            <li onclick="showPage('about')">About Us</li>
+            <li onclick="showPage('services')">Services</li>
+            <li onclick="showPage('booking')">Booking</li>
+            <li onclick="showPage('resources')">Resources</li>
+            <li onclick="showPage('testimonials')">Testimonials</li>
+            <li onclick="showPage('contact')">Contact Us</li>
+            <li onclick="showPage('faqs')">FAQs</li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div id="content">
+        <div id="home" class="page active">
+            <div class="hero">
+                <div class="hero-images">
+                    <div class="hero-image fade"> <img loading="eager" src="../uploads/1746783726477-Clams.webp" alt="Peaceful Landscape"> </div>
+                    <div class="hero-image fade"> <img loading="eager" src="../uploads/1746783726480-holistic-healing-self-treatment-peaceful-260nw-1798378189.webp" alt="Meditation Scene"> </div>
+                    <div class="hero-image fade"> <img loading="eager" src="../uploads/1746783726481-photo-1524262134826-05a36ba28ec4.jpeg" alt="Calm Nature"> </div>
+                </div>
+                <div class="hero-overlay">
+                    <h1>Find Your Inner Calm</h1>
+                    <h3>Reconnect. Breathe. Heal.</h3>
+                    <p>Join our community of mindfulness seekers and explore guided meditations, calming music, and expert insights.</p>
+                    <button onclick="showPage('booking')">Start Your Journey</button>
+                    <span>Trusted by over 10,000+ users</span>
+                    <a href="#" class="secondary-cta">Watch Introduction</a>
+                    <div class="scroll-indicator">&darr;</div>
+                </div>
             </div>
-            <div class="course-card">
-                <h3>Web Development Basics</h3>
-                <p>Build interactive websites with HTML, CSS, and JavaScript.</p>
-                <button class="cta">Start Course</button>
-            </div>
-            <div class="course-card">
-                <h3>Data Science Essentials</h3>
-                <p>Understand the basics of data analysis with Python.</p>
-                <button class="cta">Start Course</button>
-            </div>
-        </section>
-        <section id="about" class="hidden">
+        </div>
+        <div id="about" class="page">
             <h2>About Us</h2>
-            <p>At CodeUpNow, we empower learners through accessible education.</p>
-            <p><span id="goal">Our aim is to provide free and affordable learning resources for all.</span></p>
-        </section>
-        <section id="community" class="hidden">
-            <h2>Forum/Community</h2>
-            <p>Join our community, ask questions, and share knowledge!</p>
-        </section>
-        <section id="contact" class="hidden">
-            <h2>Contact Us</h2>
-            <form id="contact-form">
-                <input type="text" placeholder="Your Name" required>
-                <input type="email" placeholder="Your Email" required>
-                <textarea placeholder="Your Message" required></textarea>
-                <button type="submit">Submit</button>
+            <p id="about-section">Our mission is to make inner peace accessible through guided meditation and mindful practices.</p>
+            <h3>Our Story</h3>
+            <p>Founded in 2023, InnerCalm began with a simple goal — to help people disconnect from chaos and reconnect with themselves.</p>
+            <h3>Meet the Instructors</h3>
+            <ul>
+                <li>Aarav Sharma – Certified Meditation Coach, 10+ years of experience.</li>
+                <li>Maya Patel – Breathwork Specialist & Mindfulness Guide.</li>
+            </ul>
+            <h3>Our Philosophy</h3>
+            <p>We believe that mindfulness is a daily ritual. Through balance, breath, and stillness, anyone can transform their mind and spirit.</p>
+        </div>
+        <div id="services" class="page">
+            <h2>Our Services</h2>
+            <ul>
+                <li><strong>Guided Meditation Sessions:</strong> Experience daily live sessions led by certified instructors to reduce stress and enhance focus.</li>
+                <li><strong>Breathwork Workshops:</strong> Learn powerful breathing techniques to calm your mind and energize your body.</li>
+                <li><strong>One-on-One Coaching:</strong> Get personalized guidance tailored to your wellness goals.</li>
+                <li><strong>Mindfulness for Beginners (Course):</strong> A 4-week self-paced program to build your foundation in meditation.</li>
+            </ul>
+        </div>
+        <div id="booking" class="page">
+            <h2>Booking</h2>
+            <p>Schedule your sessions and join our meditation classes.</p>
+            <form id="bookingForm">
+                <input type="text" placeholder="Your Name" required />
+                <input type="email" placeholder="Your Email" required />
+                <button type="submit">Book Now</button>
             </form>
-        </section>
-        <section id="dashboard" class="hidden">
-            <h2>Your Dashboard</h2>
-            <p>Track your progress and achievements here.</p>
-        </section>
-    </main>
+        </div>
+        <div id="resources" class="page">
+            <h2>Resources</h2>
+            <p>Explore our library of guided videos and articles to deepen your meditation practice.</p>
+        </div>
+        <div id="testimonials" class="page">
+            <h2>User Testimonials</h2>
+            <p>Hear from our practitioners about their peaceful journeys with InnerCalm.</p>
+        </div>
+        <div id="contact" class="page">
+            <h2>Contact Us</h2>
+            <p>We'd love to hear from you! Please fill out the form below.</p>
+            <form id="contactForm">
+                <input type="text" placeholder="Your Name" required />
+                <input type="email" placeholder="Your Email" required />
+                <textarea placeholder="Your Message" required></textarea>
+                <button type="submit">Send Message</button>
+            </form>
+        </div>
+        <div id="faqs" class="page">
+            <h2>FAQs</h2>
+            <p>Check our frequently asked questions about meditation.</p>
+        </div>
+    </div>
+
     <footer>
-        <p>&copy; 2023 CodeUpNow. All rights reserved.</p>
+        <div class="social-links">
+            <a href="#">Instagram</a>
+            <a href="#">Facebook</a>
+            <a href="#">Twitter</a>
+            <a href="#">LinkedIn</a>
+            <a href="#">YouTube</a>
+            <a href="#">Pinterest</a>
+        </div>
     </footer>
+
     <script src="script.js"></script>
 </body>
 </html>
