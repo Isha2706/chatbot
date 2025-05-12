@@ -20,7 +20,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // Paths
 const dbDir = path.join(__dirname, "db");
 const websiteDir = path.join(__dirname, "webSite");
-const uploadsDir = path.join(__dirname, "uploads");
+const uploadsDir = path.join(websiteDir, "uploads");
 const historyFile = path.join(dbDir, "chat-history.json");
 const profileFile = path.join(dbDir, "user-profile.json");
 const dummyFile = path.join(dbDir, "dummy-data.json");
@@ -34,7 +34,7 @@ if (!fs.existsSync(profileFile)) fs.writeFileSync(profileFile, "{}");
 if (!fs.existsSync(dummyFile)) fs.writeFileSync(dummyFile, "{}");
 
 // Static folder for uploaded images
-app.use("/uploads", express.static(uploadsDir));
+app.use("/webSite/uploads", express.static(uploadsDir));
 
 // Static folder to serve webSite
 app.use("/webSite", express.static(websiteDir));
@@ -137,7 +137,7 @@ app.post("/upload-image", upload.array("images", 10), async (req, res) => {
       const imageData = {
         filename: file.filename,
         originalname: file.originalname,
-        url: `/uploads/${file.filename}`,
+        url: `/webSite/uploads/${file.filename}`,
         uploadedAt: new Date().toISOString(),
         description: userText,
         aiAnalysis: aiDescription,

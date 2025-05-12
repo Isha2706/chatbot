@@ -1,44 +1,20 @@
 {
-  "websiteType": "business",
-  "targetAudience": "beginners to intermediate-level practitioners, mainly adults aged 25–45, including working professionals, students, and those seeking stress relief and better sleep",
-  "mainGoal": "provide guided meditation resources, offer online sessions, and build a peaceful community, while also helping generate leads and promote our meditation services",
-  "colorScheme": "soft and calming color scheme—pastel tones like light lavender, soft blue, sage green, and warm beige",
-  "pages": [
-    "Home",
-    "About Us",
-    "Services",
-    "Booking",
-    "Resources",
-    "Testimonials",
-    "Contact Us",
-    "FAQs"
-  ],
-  "features": [
-    "booking system",
-    "guided video library",
-    "blog",
-    "user testimonials",
-    "community forum"
-  ],
-  "branding": {
-    "businessName": "InnerCalm",
-    "tagline": [
-      "Breathe. Relax. Transform.",
-      "Find your stillness within.",
-      "Guiding you to peaceful presence."
-    ],
-    "logo": "minimalist lotus flower, mandala, or a person in a meditative pose"
-  },
-  "socialLinks": {
-    "Instagram": "@MindfulInnerCalm",
-    "Facebook": "MindfulInnerCalm",
-    "Twitter": "@MindfulInnerCalm",
-    "LinkedIn": "MindfulInnerCalm",
-    "YouTube": "MindfulInnerCalm Meditation",
-    "Pinterest": "MindfulInnerCalm"
-  },
-  "heroSection": {
-    "overlayText": "Find Your Inner Calm",
-    "callToActionButton": "Start Your Journey"
-  }
+  "websiteType": "",
+  "targetAudience": "",
+  "mainGoal": "",
+  "colorScheme": "",
+  "theme": "",
+  "pages": [],
+  "sections": [],
+  "features": [],
+  "content": {},
+  "designPreferences": {},
+  "images": [],
+  "fonts": "",
+  "contactInfo": {},
+  "socialLinks": {},
+  "customScripts": "",
+  "branding": {},
+  "updateRequests": [],
+  "additionalNotes": ""
 }

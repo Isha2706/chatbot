@@ -22,12 +22,15 @@ contactForm.addEventListener('submit', function(event) {
 // Image Slider Functionality
 let currentIndex = 0;
 const images = document.querySelectorAll('.hero-image');
+
+// Initial setup to hide all images and show the first one
+images.forEach(img => img.style.opacity = '0');
+images[0].style.opacity = '1';
+
 function showNextImage() {
     images[currentIndex].style.opacity = '0';
     currentIndex = (currentIndex + 1) % images.length;
     images[currentIndex].style.opacity = '1';
 }
-setInterval(showNextImage, 5000);
 
-// Initial setup to show the first image
-images[0].style.opacity = '1';
+setInterval(showNextImage, 5000);
