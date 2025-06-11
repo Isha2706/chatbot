@@ -221,23 +221,23 @@ app.post("/chat", async (req, res) => {
       .join("\n");
 
     const promptQuick = `
-You are a helpful assistant that talks to users to understand and build their ideal website.
+      You are a helpful assistant that talks to users to understand and build their ideal website.
 
-Here is the existing chat history:
-${formattedConversation}
+      Here is the existing chat history:
+      ${formattedConversation}
 
-Here is the current user profile:
-${JSON.stringify(userProfile, null, 2)}
+      Here is the current user profile:
+      ${JSON.stringify(userProfile, null, 2)}
 
-Your goals:
-- Ask relevant questions to understand the user's needs for their website.
-- Update the profile accordingly.
-- If the user asks to change something (e.g. color, layout), update "updateRequests".
-- Be friendly and interactive, and make sure to guide the user step by step.
-- If user is asking something or requests changes, respond helpfully and then ask the next relevant question.
-- Respond ONLY in this JSON format:
-{ "nextQuestion": "string", "updatedUserProfile": { ... } }
-IMPORTANT: Do NOT include any markdown or backticks. Just return the JSON.
+      Your goals:
+      - Ask relevant questions to understand the user's needs for their website.
+      - Update the profile accordingly.
+      - If the user asks to change something (e.g. color, layout), update "updateRequests".
+      - Be friendly and interactive, and make sure to guide the user step by step.
+      - If user is asking something or requests changes, respond helpfully and then ask the next relevant question.
+      - Respond ONLY in this JSON format:
+      { "nextQuestion": "string", "updatedUserProfile": { ... } }
+      IMPORTANT: Do NOT include any markdown or backticks. Just return the JSON.
     `.trim();
 
     const quickResponse = await openai.chat.completions.create({
