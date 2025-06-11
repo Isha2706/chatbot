@@ -41,7 +41,7 @@ const PortfolioPreview = () => {
 
   return (
     <div className="h-[530px]">
-      <h2 className="text-xl font-bold mb-4">Website Preview</h2>
+      {/* <h2 className="text-xl font-bold mb-4">Website Preview</h2> */}
 
       <button
         className="bg-purple-200 px-4 py-2 rounded shadow mb-4"
