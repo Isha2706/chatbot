@@ -22,7 +22,7 @@ const UserProfilePanel = () => {
 
   return ( 
     <div className="text-sm">
-      <h2 className="text-xl font-semibold mb-4">User Profile</h2>
+      {/* <h2 className="text-xl font-semibold mb-4">User Profile</h2> */}
       <pre className="bg-green-200 p-3 rounded overflow-x-auto h-[530px] ">
         {JSON.stringify(profile, null, 2)}
       </pre>
