@@ -9,33 +9,49 @@ function ChatWindow() {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [showUploader, setShowUploader] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
-    axios.get(`${BASE_URL}/reset`).then(() => {
-      setMessages([]);
-    });
+    initializeChat();
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollToBottom();
   }, [messages]);
 
-  const handleInputChange = (e) => {
-    setUserInput(e.target.value);
-    const textarea = textareaRef.current;
+  const initializeChat = async () => {
+    try {
+      await axios.get(`${BASE_URL}/reset`);
+      setMessages([]);
+    } catch (error) {
+      console.error("Failed to initialize chat:", error);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const adjustTextareaHeight = (textarea) => {
     if (textarea) {
       textarea.style.height = "auto";
       textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`;
     }
   };
 
+  const handleInputChange = (e) => {
+    setUserInput(e.target.value);
+    adjustTextareaHeight(textareaRef.current);
+  };
+
   const sendMessage = async () => {
-    if (!userInput.trim()) return;
+    if (!userInput.trim() || isLoading) return;
 
     const updatedMessages = [...messages, { sender: "user", text: userInput }];
     setMessages(updatedMessages);
+    setIsLoading(true);
 
     try {
       const res = await fetch(`${BASE_URL}/chat`, {
@@ -44,116 +60,110 @@ function ChatWindow() {
         body: JSON.stringify({ message: userInput }),
       });
 
+      if (!res.ok) throw new Error('Failed to get response');
+
       const data = await res.json();
       setMessages([...updatedMessages, { sender: "bot", text: data.reply }]);
     } catch (error) {
       console.error("Failed to send message:", error);
-    }
-
-    setUserInput("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
+      // Optionally show error message to user
+    } finally {
+      setIsLoading(false);
+      setUserInput("");
+      adjustTextareaHeight(textareaRef.current);
     }
   };
 
   const handleImageMessage = ({ images, text }) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        sender: "user",
-        images,
-        text,
-      },
-    ]);
+    setMessages((prev) => [...prev, { sender: "user", images, text }]);
     setShowUploader(false);
   };
 
-  const clearText = () => {
-    setUserInput("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-  };
+  const MessageBubble = ({ message }) => (
+    <div className={`inline-block m-2 max-w-[80%] ${
+      message.sender === "user"
+        ? "bg-blue-500 text-white rounded-l-xl rounded-tr-xl"
+        : "bg-gray-100 rounded-r-xl rounded-tl-xl"
+    } p-3 shadow-sm transition-all hover:shadow-md`}>
+      {message.images?.map((img, i) => (
+        <div key={i} className="mb-3">
+          <img
+            src={`${BASE_URL}${img.url}`}
+            alt={`uploaded-${i}`}
+            className="max-w-xs rounded-lg shadow-sm hover:shadow-md transition-all"
+            loading="lazy"
+          />
+          {img.description && (
+            <p className="text-sm mt-1 opacity-90">{img.description}</p>
+          )}
+        </div>
+      ))}
+      {message.text && <p className="break-words">{message.text}</p>}
+    </div>
+  );
 
   return (
-    <div className="p-4 min-h-screen relative">
-      <div className="chat-box bg-slate-100 p-1 rounded shadow h-[470px] text-md overflow-y-auto">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={msg.sender === "user" ? "text-right" : "text-left"}
-          >
+    <div className="flex flex-col h-screen bg-gray-50">
+      <div className="flex-1 p-4 overflow-hidden">
+        <div className="chat-box h-full overflow-y-auto bg-white rounded-lg shadow-sm">
+          {messages.map((msg, index) => (
             <div
-              className={`inline-block m-2 max-w-[80%] ${
-                msg.sender === "user"
-                  ? "bg-green-200 rounded-l-xl"
-                  : "bg-indigo-200 rounded-r-xl"
-              } p-2`}
+              key={index}
+              className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"} mb-2`}
             >
-              {msg.images &&
-                msg.images.map((img, i) => (
-                  <div key={i} className="mb-2">
-                    <img
-                      src={`${import.meta.env.VITE_API_BASE_URL}${img.url}`}
-                      alt={`uploaded-${i}`}
-                      className="max-w-xs rounded mb-1"
-                    />
-                    {img.description && (
-                      <p >
-                        {img.description}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              {msg.text && <p>{msg.text}</p>}
+              <MessageBubble message={msg} />
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      {/* Input area */}
-      <div className="absolute bottom-3 left-0 w-full px-4 bg-white">
-        <div className="flex gap-2 items-end rounded-2xl border pl-3 pr-2 pb-1 pt-1">
-          <textarea
-            ref={textareaRef}
-            value={userInput}
-            onChange={handleInputChange}
-            rows={1}
-            className="flex-grow p-2 rounded-l-xl resize-none outline-none overflow-hidden max-h-40"
-            placeholder="Type your message"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-          />
+      <div className="p-4 bg-white border-t">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex gap-2 items-end rounded-xl border bg-white p-2 shadow-sm">
+            <textarea
+              ref={textareaRef}
+              value={userInput}
+              onChange={handleInputChange}
+              rows={1}
+              className="flex-grow p-2 focus:outline-none resize-none"
+              placeholder="Type your message..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+            />
 
-          <button
-            onClick={() => setShowUploader(!showUploader)}
-            className="bg-blue-200 hover:bg-blue-300 p-2 rounded"
-            title={showUploader ? "Close Uploader" : "Upload Image"}
-          >
-            {showUploader ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <ImageIcon className="w-5 h-5" />
-            )}
-          </button>
+            <button
+              onClick={() => setShowUploader(!showUploader)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              title={showUploader ? "Close Uploader" : "Upload Image"}
+            >
+              {showUploader ? (
+                <X className="w-5 h-5 text-gray-600" />
+              ) : (
+                <ImageIcon className="w-5 h-5 text-gray-600" />
+              )}
+            </button>
 
-          <button
-            onClick={sendMessage}
-            className="bg-blue-200 hover:bg-blue-300 p-2 rounded-r-xl"
-            title="Send Message"
-          >
-            <SendHorizontal className="w-5 h-5" />
-          </button>
+            <button
+              onClick={sendMessage}
+              disabled={isLoading}
+              className={`p-2 rounded-lg bg-blue-500 hover:bg-blue-600 transition-colors ${
+                isLoading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              title="Send Message"
+            >
+              <SendHorizontal className="w-5 h-5 text-white" />
+            </button>
+          </div>
         </div>
       </div>
 
       {showUploader && (
-        <div className="absolute bottom-20 right-10 bg-white border shadow-md rounded p-2 z-50">
+        <div className="absolute bottom-24 right-8 bg-white rounded-xl shadow-lg border p-3">
           <ImageUpload onUploadComplete={handleImageMessage} />
         </div>
       )}
