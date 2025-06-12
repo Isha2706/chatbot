@@ -72,3 +72,10 @@ npm run dev
 - **chat-history.json** → All user and bot interactions
 - **webSite/** → Generated HTML/CSS/JS files
 - **webSite/upload/** → Uploaded media files
+
+## 📥 Downloads
+
+- Click **Download** to get:
+  - Individual HTML/CSS/JS files
+  - Full project ZIP
+  - Uploaded images (if any)
