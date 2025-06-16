@@ -7,14 +7,15 @@ const dotenv = require("dotenv");
 const OpenAI = require("openai");
 const multer = require("multer");
 
+// Load environment variables once
 dotenv.config();
 
 const app = express();
 app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
-app.use(express.json());
+// Remove duplicate express.json() middleware
 
-require("dotenv").config();
+// Initialize OpenAI with API key from environment variables
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Paths
@@ -26,12 +27,24 @@ const profileFile = path.join(dbDir, "user-profile.json");
 const dummyFile = path.join(dbDir, "dummy-data.json");
 
 // Ensure required directories/files exist
-if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir);
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
-if (!fs.existsSync(websiteDir)) fs.mkdirSync(websiteDir);
-if (!fs.existsSync(historyFile)) fs.writeFileSync(historyFile, "[]");
-if (!fs.existsSync(profileFile)) fs.writeFileSync(profileFile, "{}");
-if (!fs.existsSync(dummyFile)) fs.writeFileSync(dummyFile, "{}");
+function ensureDirectoriesAndFiles() {
+  const dirs = [dbDir, uploadsDir, websiteDir];
+  const files = [
+    { path: historyFile, defaultContent: "[]" },
+    { path: profileFile, defaultContent: "{}" },
+    { path: dummyFile, defaultContent: "{}" }
+  ];
+  
+  dirs.forEach(dir => {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  });
+  
+  files.forEach(file => {
+    if (!fs.existsSync(file.path)) fs.writeFileSync(file.path, file.defaultContent);
+  });
+}
+
+ensureDirectoriesAndFiles();
 
 // Static folder for uploaded images
 app.use("/webSite/uploads", express.static(uploadsDir));
@@ -42,20 +55,65 @@ app.use("/webSite", express.static(websiteDir));
 // File upload config (image upload)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+  filename: (req, file, cb) => {
+    // Sanitize filename to prevent directory traversal attacks
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
+    cb(null, `${Date.now()}-${sanitizedName}`);
+  },
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Accept only images
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+  }
+});
+
+// Helper functions for file operations
+function readJsonFile(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    console.error(`Error reading ${filePath}:`, error);
+    return filePath.endsWith('history.json') ? [] : {};
+  }
+}
+
+function writeJsonFile(filePath, data) {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    return true;
+  } catch (error) {
+    console.error(`Error writing to ${filePath}:`, error);
+    return false;
+  }
+}
 
 // GET: Serve chat history
 app.get("/history", (req, res) => {
-  const chatHistory = JSON.parse(fs.readFileSync(historyFile));
-  res.json(chatHistory);
+  try {
+    const chatHistory = readJsonFile(historyFile);
+    res.json(chatHistory);
+  } catch (error) {
+    console.error("Error reading chat history:", error);
+    res.status(500).json({ error: "Failed to load chat history" });
+  }
 });
 
 // GET: Serve user profile
 app.get("/profile", (req, res) => {
-  const userProfile = JSON.parse(fs.readFileSync(profileFile));
-  res.json(userProfile);
+  try {
+    const userProfile = readJsonFile(profileFile);
+    res.json(userProfile);
+  } catch (error) {
+    console.error("Error reading user profile:", error);
+    res.status(500).json({ error: "Failed to load user profile" });
+  }
 });
 
 // GET: Serve current webSite code
@@ -69,7 +127,7 @@ app.get("/get-webSite-code", async (req, res) => {
       if (fs.existsSync(filePath)) {
         code[file] = fs.readFileSync(filePath, "utf-8");
       } else {
-        code[file] = "// File not found";
+        code[file] = `// File ${file} not found`;
       }
     });
 
@@ -81,88 +139,118 @@ app.get("/get-webSite-code", async (req, res) => {
 });
 
 // POST: Upload multiple images with a text and analyze using OpenAI
-app.post("/upload-image", upload.array("images", 10), async (req, res) => {
+app.post("/upload-image", upload.array("images", 5), async (req, res) => {
   try {
-    const files = req.files;
+    const files = req.files || [];
     const userText = req.body.text || "";
-    if (!files || files.length === 0) {
-      return res.status(400).json({ error: "No files uploaded" });
+    
+    // Allow uploads with just text, no images required
+    if (files.length === 0 && !userText.trim()) {
+      return res.status(400).json({ error: "Please provide either images or text" });
     }
 
     // Load existing profile and history
-    const userProfile = JSON.parse(fs.readFileSync(profileFile));
-    const chatHistory = JSON.parse(fs.readFileSync(historyFile));
+    const userProfile = readJsonFile(profileFile);
+    const chatHistory = readJsonFile(historyFile);
 
     // Ensure images field exists
     if (!userProfile.images) userProfile.images = [];
 
     const newImagesData = [];
 
-    for (const file of files) {
-      const imagePath = path.join(uploadsDir, file.filename);
-
-      // Call OpenAI to analyze the image
-      const analysis = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant that describes images.",
-          },
-          {
-            role: "user",
-            content: [
+    // Process images if any were uploaded
+    if (files.length > 0) {
+      for (const file of files) {
+        const imagePath = path.join(uploadsDir, file.filename);
+        const fileExtension = path.extname(file.filename).slice(1);
+        
+        try {
+          // Call OpenAI to analyze the image
+          const analysis = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
               {
-                type: "text",
-                text: "What kind of image is this and what is its use?",
+                role: "system",
+                content: "You are a helpful assistant that describes images.",
               },
               {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/${path
-                    .extname(file.filename)
-                    .slice(1)};base64,${fs.readFileSync(imagePath, {
-                    encoding: "base64",
-                  })}`,
-                },
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: "What kind of image is this and what is its use?",
+                  },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:image/${fileExtension};base64,${fs.readFileSync(imagePath, {
+                        encoding: "base64",
+                      })}`,
+                    },
+                  },
+                ],
               },
             ],
-          },
-        ],
-        max_tokens: 200,
-      });
+            max_tokens: 200,
+          });
 
-      const aiDescription = analysis.choices[0].message.content;
+          const aiDescription = analysis.choices[0].message.content;
 
-      const imageData = {
-        filename: file.filename,
-        originalname: file.originalname,
-        url: `/webSite/uploads/${file.filename}`,
-        uploadedAt: new Date().toISOString(),
-        description: userText,
-        aiAnalysis: aiDescription,
-      };
+          const imageData = {
+            filename: file.filename,
+            originalname: file.originalname,
+            url: `/webSite/uploads/${file.filename}`,
+            uploadedAt: new Date().toISOString(),
+            description: userText,
+            aiAnalysis: aiDescription,
+          };
 
-      userProfile.images.push(imageData);
-      newImagesData.push(imageData);
+          userProfile.images.push(imageData);
+          newImagesData.push(imageData);
+        } catch (imageError) {
+          console.error(`Error analyzing image ${file.filename}:`, imageError);
+          // Continue with other images even if one fails
+          const imageData = {
+            filename: file.filename,
+            originalname: file.originalname,
+            url: `/webSite/uploads/${file.filename}`,
+            uploadedAt: new Date().toISOString(),
+            description: userText,
+            aiAnalysis: "Image analysis failed",
+          };
+          
+          userProfile.images.push(imageData);
+          newImagesData.push(imageData);
+        }
+      }
     }
 
     // Add to chat history
+    const userMessage = files.length > 0 
+      ? `Uploaded ${files.length} image(s) with text: "${userText}"` 
+      : `Message: "${userText}"`;
+      
+    const botMessage = newImagesData.length > 0
+      ? newImagesData
+          .map((img) => `AI Analysis for ${img.originalname}: ${img.aiAnalysis}`)
+          .join("\n\n")
+      : "Message received";
+      
     chatHistory.push({
-      user: `Uploaded ${files.length} image(s) with text: "${userText}"`,
-      bot: newImagesData
-        .map((img) => `AI Analysis for ${img.originalname}: ${img.aiAnalysis}`)
-        .join("\n\n"),
+      user: userMessage,
+      bot: botMessage,
     });
 
     // Save profile and history
-    fs.writeFileSync(profileFile, JSON.stringify(userProfile, null, 2));
-    fs.writeFileSync(historyFile, JSON.stringify(chatHistory, null, 2));
+    writeJsonFile(profileFile, userProfile);
+    writeJsonFile(historyFile, chatHistory);
 
     res.status(200).json({
       success: true,
       images: newImagesData,
-      message: "Images uploaded and analyzed successfully.",
+      message: files.length > 0 
+        ? "Images uploaded and analyzed successfully." 
+        : "Message received successfully.",
     });
   } catch (err) {
     console.error("Upload Error:", err);
@@ -170,7 +258,7 @@ app.post("/upload-image", upload.array("images", 10), async (req, res) => {
   }
 });
 
-// POST: Reset user profile and history
+// GET: Reset user profile and history
 app.get("/reset", (req, res) => {
   try {
     const defaultProfile = {
@@ -194,8 +282,8 @@ app.get("/reset", (req, res) => {
       additionalNotes: "",
     };
 
-    fs.writeFileSync(historyFile, `[]`);
-    fs.writeFileSync(profileFile, JSON.stringify(defaultProfile, null, 2));
+    writeJsonFile(historyFile, []);
+    writeJsonFile(profileFile, defaultProfile);
     res.status(200).json({ message: "Files reset successfully" });
   } catch (error) {
     console.error("Reset Error:", error);
@@ -206,10 +294,14 @@ app.get("/reset", (req, res) => {
 // POST: Quick profile-building chat
 app.post("/chat", async (req, res) => {
   const { message } = req.body;
+  
+  if (!message || typeof message !== 'string') {
+    return res.status(400).json({ error: "Message is required and must be a string" });
+  }
 
   try {
-    const chatHistory = JSON.parse(fs.readFileSync(historyFile));
-    const userProfile = JSON.parse(fs.readFileSync(profileFile));
+    const chatHistory = readJsonFile(historyFile);
+    const userProfile = readJsonFile(profileFile);
     const updatedHistory = [...chatHistory, { user: message, bot: "" }];
 
     const formattedConversation = updatedHistory
@@ -263,8 +355,8 @@ app.post("/chat", async (req, res) => {
 
     updatedHistory[updatedHistory.length - 1].bot = parsedQuick.nextQuestion;
 
-    fs.writeFileSync(historyFile, JSON.stringify(updatedHistory, null, 2));
-    fs.writeFileSync(profileFile, JSON.stringify(parsedQuick.updatedUserProfile, null, 2));
+    writeJsonFile(historyFile, updatedHistory);
+    writeJsonFile(profileFile, parsedQuick.updatedUserProfile);
 
     res.json({
       reply: parsedQuick.nextQuestion,
@@ -276,12 +368,25 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-
 // POST: Generate dynamic webSite from profile
 app.post("/promptBackground", async (req, res) => {
   try {
-    const userProfile = JSON.parse(fs.readFileSync(profileFile));
-    const chatHistory = JSON.parse(fs.readFileSync(historyFile));
+    const userProfile = readJsonFile(profileFile);
+    const chatHistory = readJsonFile(historyFile);
+    
+    // Check if website files exist, create with defaults if not
+    const websiteFiles = [
+      { path: path.join(websiteDir, "index.html"), default: "<!DOCTYPE html><html><head><title>Website</title><link rel='stylesheet' href='style.css'></head><body><div id='app'></div><script src='script.js'></script></body></html>" },
+      { path: path.join(websiteDir, "style.css"), default: "body { font-family: Arial, sans-serif; margin: 0; padding: 0; }" },
+      { path: path.join(websiteDir, "script.js"), default: "document.addEventListener('DOMContentLoaded', function() { console.log('Website loaded'); });" }
+    ];
+    
+    websiteFiles.forEach(file => {
+      if (!fs.existsSync(file.path)) {
+        fs.writeFileSync(file.path, file.default);
+      }
+    });
+    
     const websiteCode = {
       html: fs.readFileSync(path.join(websiteDir, "index.html"), "utf-8"),
       css: fs.readFileSync(path.join(websiteDir, "style.css"), "utf-8"),
@@ -331,23 +436,27 @@ Respond ONLY in this JSON format:
     });
 
     const content = response.choices[0].message.content;
-    const parsed = JSON.parse(content);
+    let parsed;
+    
+    try {
+      parsed = JSON.parse(content);
+    } catch (err) {
+      console.error("❌ Failed to parse JSON from OpenAI:", content);
+      return res.status(500).json({
+        error: "Invalid JSON received from OpenAI",
+        rawResponse: content.substring(0, 200) + "...", // Send truncated response for debugging
+      });
+    }
 
-    fs.writeFileSync(
-      profileFile,
-      JSON.stringify(parsed.updatedUserProfile, null, 2)
-    );
-    fs.writeFileSync(
-      path.join(websiteDir, "index.html"),
-      parsed.updatedCode.html
-    );
-    fs.writeFileSync(
-      path.join(websiteDir, "style.css"),
-      parsed.updatedCode.css
-    );
+    writeJsonFile(profileFile, parsed.updatedUserProfile);
+    fs.writeFileSync(path.join(websiteDir, "index.html"), parsed.updatedCode.html);
+    fs.writeFileSync(path.join(websiteDir, "style.css"), parsed.updatedCode.css);
     fs.writeFileSync(path.join(websiteDir, "script.js"), parsed.updatedCode.js);
 
-    res.status(200).json({ message: "WebSite updated successfully" });
+    res.status(200).json({ 
+      message: "WebSite updated successfully",
+      previewUrl: `http://localhost:${port}/webSite/index.html`
+    });
   } catch (err) {
     console.error("Background update error:", err);
     res.status(500).json({ error: "Failed to update webSite" });
@@ -356,6 +465,22 @@ Respond ONLY in this JSON format:
 
 // Start server
 const port = process.env.PORT || 3001;
-app.listen(port, () =>
-  console.log(`Server running on http://localhost:${port}`)
-);
+const server = app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Website preview available at http://localhost:${port}/webSite/index.html`);
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
+});
